@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedAlert – Triage Intelligente</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #dbeafe, #ffffff);
+      margin: 0;
+      padding: 20px;
+      color: #1a365d;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      padding: 20px;
+      animation: fadeIn 0.8s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .title {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+    }
+    .section-title {
+      font-size: 1.25rem;
+      margin-bottom: 10px;
+      color: #2b6cb0;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .btn {
+      padding: 10px 20px;
+      background-color: #2b6cb0;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .triage {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .triage.rosso { color: #e53e3e; }
+    .triage.giallo { color: #d69e2e; }
+    .triage.verde { color: #38a169; }
+    .avatar {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .avatar img {
+      width: 120px;
+      border-radius: 50%;
+      border: 4px solid #4299e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">MedAlert – Triage Intelligente</h1>
+
+    <div class="avatar">
+      <img src="https://cdn-icons-png.flaticon.com/512/387/387561.png" alt="Avatar paziente">
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Domande sullo stato di salute</h2>
+      <label>Hai difficoltà a respirare?</label>
+      <select id="q1">
+        <option value="no">No</option>
+        <option value="sì">Sì</option>
+      </select>
+      <label>Hai dolore intenso in qualche parte del corpo?</label>
+      <select id="q2">
+        <option value="no">No</option>
+        <option value="sì">Sì</option>
+      </select>
+      <label>Hai avuto febbre nelle ultime 24h?</label>
+      <select id="q3">
+        <option value="no">No</option>
+        <option value="sì">Sì</option>
+      </select>
+      <label>Altri sintomi?</label>
+      <textarea id="symptoms" rows="3" placeholder="Inserisci altri sintomi..."></textarea>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Valori da sensori (Arduino)</h2>
+      <div>BPM: <span id="bpm">--</span></div>
+      <div>Temperatura: <span id="temp">--</span> °C</div>
+      <div>Saturazione: <span id="spo2">--</span>%</div>
+      <button class="btn" onclick="simulateSensorData()">Simula Lettura Sensori</button>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Codice Triage</h2>
+      <div id="triage-code" class="triage">---</div>
+      <button class="btn" onclick="printPatientSheet()">Stampa Scheda Paziente</button>
+      <button class="btn" style="background-color: #e53e3e" onclick="emergencyAlert()">Allarme Emergenza</button>
+    </div>
+  </div>
+
+  <script>
+    function getTriageCode(temp, bpm, spo2, symptoms, q1, q2, q3) {
+      if (q1 === "sì" || q2 === "sì" || temp > 39 || bpm > 130 || spo2 < 90) return "Rosso";
+      if (q3 === "sì" || (temp >= 38 && temp <= 39) || bpm > 110 || spo2 < 95 || /febbre|malessere/i.test(symptoms)) return "Giallo";
+      return "Verde";
+    }
+
+    function simulateSensorData() {
+      const bpm = Math.floor(60 + Math.random() * 60);
+      const temp = (36 + Math.random() * 3).toFixed(1);
+      const spo2 = Math.floor(90 + Math.random() * 10);
+      const symptoms = document.getElementById("symptoms").value;
+      const q1 = document.getElementById("q1").value;
+      const q2 = document.getElementById("q2").value;
+      const q3 = document.getElementById("q3").value;
+
+      document.getElementById("bpm").textContent = bpm;
+      document.getElementById("temp").textContent = temp;
+      document.getElementById("spo2").textContent = spo2;
+
+      const code = getTriageCode(temp, bpm, spo2, symptoms, q1, q2, q3);
+      const triageElement = document.getElementById("triage-code");
+      triageElement.textContent = code;
+      triageElement.className = "triage " + code.toLowerCase();
+
+      if (code === "Rosso") {
+        // Simulazione LED: accende rosso
+        console.log("LED ROSSO acceso - EMERGENZA");
+      } else if (code === "Giallo") {
+        console.log("LED GIALLO acceso - URGENZA MODERATA");
+      } else {
+        console.log("LED VERDE acceso - Nessun pericolo immediato");
+      }
+    }
+
+    function emergencyAlert() {
+      alert("⚠️ ALLARME EMERGENZA INVIATO!");
+      console.log("Allarme emergenza inviato via sistema");
+    }
+
+    function printPatientSheet() {
+      const bpm = document.getElementById("bpm").textContent;
+      const temp = document.getElementById("temp").textContent;
+      const spo2 = document.getElementById("spo2").textContent;
+      const code = document.getElementById("triage-code").textContent;
+      const symptoms = document.getElementById("symptoms").value;
+      const sheet = `\nScheda Paziente\n------------------------\nBPM: ${bpm}\nTemperatura: ${temp}°C\nSaturazione: ${spo2}%\nSintomi: ${symptoms}\nCodice Triage: ${code}`;
+      alert(sheet);
+    }
+  </script>
+</body>
+</html>
